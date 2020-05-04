@@ -5,12 +5,19 @@ import {
   Platform,
   View,
   ScrollView,
+  TextInput,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
+import * as Yup from 'yup';
+
 import { Form } from '@unform/mobile';
 import { FormHandles } from '@unform/core';
 
+import { useAuth } from '../../hooks/auth';
+
+import getValidationErrors from '../../utils/getValidationErrors';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 
@@ -25,13 +32,47 @@ import {
   CreateAccountButtonText,
 } from './styles';
 
+interface SingInFormData {
+  email: string;
+  password: string;
+}
+
 const SignIn: React.FC = () => {
   const navigation = useNavigation();
+  const passwordInputRef = useRef<TextInput>(null);
   const formRef = useRef<FormHandles>(null);
 
-  const handleSignIn = useCallback((data: object) => {
-    console.log(data);
-  }, []);
+  const { signIn } = useAuth();
+
+  const handleSignIn = useCallback(
+    async (data: SingInFormData) => {
+      try {
+        formRef.current?.setErrors({});
+        const schema = Yup.object().shape({
+          email: Yup.string()
+            .required('E-mail obrigatório')
+            .email('Digite um e-mail válido'),
+          password: Yup.string().required('Senha obrigatória'),
+        });
+
+        await schema.validate(data, { abortEarly: false });
+        await signIn({ email: data.email, password: data.password });
+      } catch (err) {
+        if (err instanceof Yup.ValidationError) {
+          const error = getValidationErrors(err);
+          formRef.current?.setErrors(error);
+
+          return;
+        }
+
+        Alert.alert(
+          'Erro na autenticação',
+          'Ocorreu um erro ao fazer login, cheque as credenciais.',
+        );
+      }
+    },
+    [signIn],
+  );
 
   return (
     <>
@@ -50,8 +91,27 @@ const SignIn: React.FC = () => {
               <Title>Faça seu login</Title>
             </View>
             <Form ref={formRef} onSubmit={handleSignIn}>
-              <Input name="email" icon="mail" placeholder="E-mail" />
-              <Input name="password" icon="lock" placeholder="Senha" />
+              <Input
+                autoCorrect={false}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                name="email"
+                icon="mail"
+                placeholder="E-mail"
+                returnKeyType="next"
+                onSubmitEditing={() => {
+                  passwordInputRef.current?.focus();
+                }}
+              />
+              <Input
+                ref={passwordInputRef}
+                name="password"
+                icon="lock"
+                placeholder="Senha"
+                secureTextEntry
+                returnKeyType="send"
+                onSubmitEditing={() => formRef.current?.submitForm()}
+              />
 
               <Button onPress={() => formRef.current?.submitForm()}>
                 Entrar
