@@ -17,7 +17,7 @@ Projeto **React Native**.
 <img src="https://github.com/isadoravs/GoBarber/blob/master/app.png" width="210" height="420"/>  <img src="https://github.com/isadoravs/GoBarber/blob/master/app1.png" width="210" height="420"/>
 
 para instalar os pacotes de dependência:
-> yarn
+> yarn 
 
 para rodar a aplicação:
 > yarn ios ou yarn android
